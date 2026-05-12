@@ -1,0 +1,16 @@
+image: alpine
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Deploy to Production
+          deployment: production
+          script:
+            - apk add --no-cache openssh-client sshpass
+            - |
+              sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST \
+                "cd /etc/dokploy/applications/unitiprod-slacknotifier-ph9rux/code && \
+                 git pull origin main && \
+                 docker build -t unitiprod-slacknotifier-ph9rux:latest . && \
+                 docker service update --force --image unitiprod-slacknotifier-ph9rux:latest unitiprod-slacknotifier-ph9rux"
