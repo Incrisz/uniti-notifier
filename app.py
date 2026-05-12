@@ -94,15 +94,6 @@ def send_stats_report():
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute("SELECT COUNT(*) FROM signal_logs")
-        total_signals = cur.fetchone()[0]
-
-        cur.execute("SELECT COUNT(*) FROM milestone_logs")
-        total_milestones = cur.fetchone()[0]
-
-        cur.execute("SELECT COUNT(*) FROM milestone_logs WHERE is_checked = false")
-        unchecked = cur.fetchone()[0]
-
         cur.execute(
             "SELECT COUNT(*) FROM signal_logs "
             "WHERE created_at >= NOW() - INTERVAL '6 hours'"
@@ -115,13 +106,29 @@ def send_stats_report():
         )
         milestones_6h = cur.fetchone()[0]
 
+        cur.execute(
+            "SELECT COUNT(*) FROM signal_logs WHERE created_at >= current_date"
+        )
+        signals_today = cur.fetchone()[0]
+
+        cur.execute(
+            "SELECT COUNT(*) FROM milestone_logs WHERE created_at >= current_date"
+        )
+        milestones_today = cur.fetchone()[0]
+
+        cur.execute(
+            "SELECT COUNT(*) FROM milestone_logs "
+            "WHERE is_checked = false AND created_at >= current_date"
+        )
+        unchecked = cur.fetchone()[0]
+
         cur.execute("SELECT MAX(created_at) FROM intervention_logs")
         last_intervention = cur.fetchone()[0]
 
         cur.close()
         conn.close()
 
-        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         last_int_str = (
             last_intervention.strftime("%Y-%m-%d %H:%M UTC")
             if last_intervention
@@ -130,13 +137,13 @@ def send_stats_report():
         unchecked_flag = " ⚠️" if unchecked > 0 else " ✅"
 
         send_slack(
-            f"📊 *Signals-Milestones Stats Report* — `{now_str}`\n\n"
+            f"📊 *Signals-Milestones Stats Report*\n\n"
             f"*Last 6 Hours*\n"
             f"• Signals received: `{signals_6h}`\n"
             f"• Milestones triggered: `{milestones_6h}`\n\n"
-            f"*All Time*\n"
-            f"• Total signals: `{total_signals}`\n"
-            f"• Total milestones: `{total_milestones}`\n"
+            f"*Today ({today_str})*\n"
+            f"• Total signals: `{signals_today}`\n"
+            f"• Total milestones: `{milestones_today}`\n"
             f"• Unchecked milestones: `{unchecked}`{unchecked_flag}\n\n"
             f"*Last Intervention Cron Run:* `{last_int_str}`"
         )
