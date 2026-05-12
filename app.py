@@ -31,7 +31,7 @@ def send_slack(text: str):
         logger.warning("SLACK_WEBHOOK_URL not set — skipping Slack notification")
         return
     try:
-        resp = requests.post(SLACK_WEBHOOK_URL, json={"text": text}, timeout=10)
+        resp = requests.post(SLACK_WEBHOOK_URL, json={"text": f"<!channel>\n{text}"}, timeout=10)
         resp.raise_for_status()
     except Exception as exc:
         logger.error("Failed to send Slack message: %s", exc)
@@ -130,7 +130,7 @@ def send_stats_report():
         unchecked_flag = " ⚠️" if unchecked > 0 else " ✅"
 
         send_slack(
-            f"📊 *DB Stats Report* — `{now_str}`\n\n"
+            f"📊 *Signals-Milestones Stats Report* — `{now_str}`\n\n"
             f"*Last 6 Hours*\n"
             f"• Signals received: `{signals_6h}`\n"
             f"• Milestones triggered: `{milestones_6h}`\n\n"
