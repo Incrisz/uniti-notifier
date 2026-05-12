@@ -162,7 +162,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone="UTC")
 
     # Detect new cron runs — poll every 2 minutes
-    scheduler.add_job(check_cronjob_run, "interval", minutes=2, id="cronjob_check")
+    scheduler.add_job(check_cronjob_run, "interval", minutes=10, id="cronjob_check")
 
     # DB stats snapshot — every 6 hours
     scheduler.add_job(send_stats_report, "interval", hours=6, id="stats_report")
