@@ -4,7 +4,7 @@ A lightweight Python service that monitors the Uniti database and sends updates 
 
 ## What it does
 
-- **Cron job alerts** — polls every 2 minutes and sends a Slack message the moment the intervention cron job runs, including whether it succeeded or failed and the exact timestamp.
+- **Cron job alerts** — polls every 10 minutes and sends a Slack message the moment the intervention cron job runs, including whether it succeeded or failed and the exact timestamp.
 - **6-hour stats reports** — every 6 hours (and once on startup) sends a snapshot to Slack showing:
   - Signals and milestones received in the last 6 hours
   - All-time totals for signals and milestones
