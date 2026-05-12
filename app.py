@@ -67,22 +67,46 @@ def check_cronjob_run():
             run_count = "N/A"
 
         cur.close()
-        conn.close()
 
         if not last_run_at:
+            conn.close()
             return
 
         if last_run_at != _last_known_run_at:
+            prev_run_at = _last_known_run_at
             _last_known_run_at = last_run_at
+
+            # Count interventions generated in this run
+            interventions_generated = 0
+            users_reached = 0
+            if prev_run_at:
+                cur2 = conn.cursor()
+                cur2.execute(
+                    "SELECT COALESCE(SUM(array_length(intervention_ids, 1)), 0), COUNT(*) "
+                    "FROM intervention_logs WHERE created_at > %s AND created_at <= %s",
+                    (prev_run_at, last_run_at),
+                )
+                interventions_generated, users_reached = cur2.fetchone()
+                cur2.close()
+
+            conn.close()
+
             icon = "✅" if last_success else "❌"
             ts = last_run_at.strftime("%Y-%m-%d %H:%M:%S UTC")
+            intervention_line = (
+                f"• Interventions generated: `{interventions_generated}` across `{users_reached}` user(s)\n"
+                if prev_run_at else
+                "• Interventions generated: `N/A` (first check since startup)\n"
+            )
             send_slack(
                 f"{icon} *Intervention Cron Job Ran*\n"
                 f"• Time: `{ts}`\n"
                 f"• Status: {'Success' if last_success else 'Failed'}\n"
-                f"• Total runs: {run_count}\n"
-                f"• Note: {last_message or 'N/A'}"
+                f"{intervention_line}"
+                # f"• Total runs: {run_count}"
             )
+        else:
+            conn.close()
 
     except Exception as exc:
         logger.error("check_cronjob_run error: %s", exc)
