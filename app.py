@@ -149,12 +149,28 @@ def send_stats_report():
         cur.execute("SELECT MAX(created_at) FROM intervention_logs")
         last_intervention = cur.fetchone()[0]
 
+        last_run_interventions = 0
+        if last_intervention:
+            cur.execute(
+                "SELECT COALESCE(SUM(array_length(intervention_ids, 1)), 0) "
+                "FROM intervention_logs "
+                "WHERE DATE(created_at) = DATE(%s)",
+                (last_intervention,),
+            )
+            last_run_interventions = cur.fetchone()[0]
+
         cur.close()
         conn.close()
 
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        six_hours_ago = now - timedelta(hours=6)
+        from_str = six_hours_ago.strftime("%I%p").lstrip("0").lower()
+        to_str = now.strftime("%I%p").lstrip("0").lower()
+        date_str = now.strftime("%Y-%m-%d")
+        today_str = date_str
         last_int_str = (
-            last_intervention.strftime("%Y-%m-%d %H:%M UTC")
+            f"{last_intervention.strftime('%Y-%m-%d %H:%M UTC')} - generated interventions: `{last_run_interventions}`"
             if last_intervention
             else "Never"
         )
@@ -162,7 +178,7 @@ def send_stats_report():
 
         send_slack(
             f"📊 *Signals-Milestones Stats Report*\n\n"
-            f"*Last 6 Hours*\n"
+            f"*Last 6 Hours ({date_str} {from_str} - {to_str} UTC)*\n"
             f"• Signals received: `{signals_6h}`\n"
             f"• Milestones triggered: `{milestones_6h}`\n\n"
             f"*Today ({today_str})*\n"
